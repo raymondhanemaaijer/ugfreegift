@@ -268,7 +268,7 @@ This feature adds the `read_markets` scope (needed for the Markets page's `marke
 
 ## Hosting on Vercel (Ultimate Gainz setup)
 
-The app runs on Vercel, imported from github.com/raymondhanemaaijer/ugfreegift. Vercel detects React Router automatically and uses the `vercel-build` script, which runs `prisma generate`, `prisma migrate deploy` and the React Router build. Required environment variables on the Vercel project:
+The app runs on Vercel, imported from github.com/raymondhanemaaijer/ugfreegift. Vercel detects React Router automatically and runs the standard `build` script. Required environment variables on the Vercel project:
 
 | Variable | Value |
 | --- | --- |
@@ -278,7 +278,7 @@ The app runs on Vercel, imported from github.com/raymondhanemaaijer/ugfreegift. 
 | `SCOPES` | the `scopes` string from the toml |
 | `POSTGRES_URL` | injected by a Vercel Postgres storage (Neon or Prisma Postgres) connected to the project |
 
-Session storage is the only database use (Prisma `Session` table). After changing `application_url`, `redirect_urls` or scopes in the toml, run `npm run deploy` so Shopify receives the new config.
+Session storage is the only database use: `@shopify/shopify-app-session-storage-postgresql` creates its own table on first request, no migrations needed. After changing `application_url`, `redirect_urls` or scopes in the toml, run `npm run deploy` so Shopify receives the new config.
 
 ## Resources
 
