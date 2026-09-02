@@ -266,6 +266,20 @@ This feature adds the `read_markets` scope (needed for the Markets page's `marke
 1. From the repo root, run `shopify app deploy` against the linked app config (dev or `shopify.app.free-gift-discount.toml` for production).
 2. In the Shopify admin, reinstall the app (or accept the new scope prompt) so `read_markets` is granted — until that happens, the Markets page's market list will fail to load, though gift discounting itself keeps working off the builtin fallback.
 
+## Hosting on Vercel (Ultimate Gainz setup)
+
+The app runs on Vercel, imported from github.com/raymondhanemaaijer/ugfreegift. Vercel detects React Router automatically and uses the `vercel-build` script, which runs `prisma generate`, `prisma migrate deploy` and the React Router build. Required environment variables on the Vercel project:
+
+| Variable | Value |
+| --- | --- |
+| `SHOPIFY_API_KEY` | client id from `shopify.app.free-gift-discount-ug.toml` |
+| `SHOPIFY_API_SECRET` | client secret from the Shopify Dev Dashboard |
+| `SHOPIFY_APP_URL` | `https://ugfreegift.vercel.app` |
+| `SCOPES` | the `scopes` string from the toml |
+| `POSTGRES_URL` | injected by a Vercel Postgres storage (Neon or Prisma Postgres) connected to the project |
+
+Session storage is the only database use (Prisma `Session` table). After changing `application_url`, `redirect_urls` or scopes in the toml, run `npm run deploy` so Shopify receives the new config.
+
 ## Resources
 
 React Router:
