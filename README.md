@@ -272,7 +272,7 @@ The app runs on Vercel, imported from github.com/raymondhanemaaijer/ugfreegift. 
 
 | Variable | Value |
 | --- | --- |
-| `SHOPIFY_API_KEY` | client id from `shopify.app.free-gift-discount-ug.toml` |
+| `SHOPIFY_API_KEY` | client id from `shopify.app.free-gift-discount.toml` |
 | `SHOPIFY_API_SECRET` | client secret from the Shopify Dev Dashboard |
 | `SHOPIFY_APP_URL` | `https://ugfreegift.vercel.app` |
 | `SCOPES` | the `scopes` string from the toml |
