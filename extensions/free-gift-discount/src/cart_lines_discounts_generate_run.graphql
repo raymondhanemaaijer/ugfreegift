@@ -18,5 +18,13 @@ query CartLinesDiscountsGenerateRunInput {
   }
   discount {
     discountClasses
+    metafield(namespace: "$app:free-gift", key: "config") {
+      jsonValue
+    }
+  }
+  localization {
+    country {
+      isoCode
+    }
   }
 }

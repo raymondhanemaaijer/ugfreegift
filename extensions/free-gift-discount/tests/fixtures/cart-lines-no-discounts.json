@@ -7,16 +7,27 @@
         "lines": [
           {
             "id": "gid://shopify/CartLine/0",
+            "quantity": 1,
             "cost": {
               "subtotalAmount": {
                 "amount": "100.0"
               }
+            },
+            "merchandise": {
+              "__typename": "ProductVariant",
+              "id": "gid://shopify/ProductVariant/1"
             }
           }
         ]
       },
       "discount": {
-        "discountClasses": []
+        "discountClasses": [],
+        "metafield": null
+      },
+      "localization": {
+        "country": {
+          "isoCode": "NL"
+        }
       }
     },
     "output": {

@@ -1,16 +1,30 @@
 import { useEffect } from "react";
-import { useFetcher } from "react-router";
+import { useFetcher, useLoaderData } from "react-router";
 import { useAppBridge } from "@shopify/app-bridge-react";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import { authenticate } from "../shopify.server";
+import { findFreeGiftDiscountNode } from "../lib/discount.server";
 
 export const loader = async ({ request }) => {
-  await authenticate.admin(request);
-  return null;
+  const { admin } = await authenticate.admin(request);
+  const discountNode = await findFreeGiftDiscountNode(admin);
+
+  return { discountNode };
 };
 
 export const action = async ({ request }) => {
   const { admin } = await authenticate.admin(request);
+
+  // Re-check before creating: another request (or a previous click) may
+  // have already created the discount, and this keeps the action idempotent.
+  const existing = await findFreeGiftDiscountNode(admin);
+
+  if (existing) {
+    return {
+      success: false,
+      message: "Discount already exists",
+    };
+  }
 
   const functionsResponse = await admin.graphql(`
     query {
@@ -90,10 +104,12 @@ export const action = async ({ request }) => {
 };
 
 export default function Index() {
+  const { discountNode } = useLoaderData();
   const fetcher = useFetcher();
   const shopify = useAppBridge();
 
   const isLoading = fetcher.state === "submitting";
+  const justCreated = fetcher.data?.success && fetcher.data.discount;
 
   useEffect(() => {
     if (fetcher.data?.success) {
@@ -111,28 +127,39 @@ export default function Index() {
     fetcher.submit({}, { method: "POST" });
   };
 
+  const found = justCreated || discountNode;
+
   return (
     <s-page heading="Free Gift Discount">
-      <s-section heading="Create automatic discount">
-        <s-paragraph>
-          Click the button below to create the automatic app discount for this store.
-        </s-paragraph>
-
-        <s-button onClick={createDiscount} {...(isLoading ? { loading: true } : {})}>
-          Create Free Gift Discount
-        </s-button>
-
-        {fetcher.data?.message && (
-          <s-box padding="base" borderWidth="base" borderRadius="base">
-            <s-paragraph>{fetcher.data.message}</s-paragraph>
-          </s-box>
+      <s-section heading="Automatic discount status">
+        {found ? (
+          <s-stack direction="block" gap="base">
+            <s-paragraph>
+              <s-badge tone={found.status === "ACTIVE" ? "success" : "warning"}>
+                {found.status === "ACTIVE" ? "Active" : found.status || "Inactive"}
+              </s-badge>{" "}
+              {found.title || "Free Gift Discount"} is set up for this store.
+            </s-paragraph>
+            <s-paragraph>
+              Manage per-market thresholds and gift products on the{" "}
+              <s-link href="/app/markets">Markets</s-link> page.
+            </s-paragraph>
+          </s-stack>
+        ) : (
+          <s-stack direction="block" gap="base">
+            <s-paragraph>
+              No automatic Free Gift Discount exists yet for this store. Create it
+              once, then configure thresholds and gift products per market.
+            </s-paragraph>
+            <s-button onClick={createDiscount} {...(isLoading ? { loading: true } : {})}>
+              Create Free Gift Discount
+            </s-button>
+          </s-stack>
         )}
 
-        {fetcher.data?.discount && (
+        {fetcher.data?.message && !fetcher.data?.success && (
           <s-box padding="base" borderWidth="base" borderRadius="base">
-            <pre style={{ margin: 0 }}>
-              <code>{JSON.stringify(fetcher.data.discount, null, 2)}</code>
-            </pre>
+            <s-paragraph>{fetcher.data.message}</s-paragraph>
           </s-box>
         )}
       </s-section>

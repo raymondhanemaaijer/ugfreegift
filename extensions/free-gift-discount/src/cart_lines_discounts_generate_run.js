@@ -2,36 +2,12 @@ import {
   DiscountClass,
   ProductDiscountSelectionStrategy,
 } from "../generated/api";
+import { resolveConfig } from "./resolve-config";
 
 /**
  * @typedef {import("../generated/api").CartInput} RunInput
  * @typedef {import("../generated/api").CartLinesDiscountsGenerateRunResult} CartLinesDiscountsGenerateRunResult
  */
-
-const FREE_GIFT_IDS = {
-  socks: [
-    "gid://shopify/ProductVariant/64124155494749",
-    "gid://shopify/ProductVariant/52540821242205",
-  ],
-  thong: [
-    "gid://shopify/ProductVariant/62532493443421",
-    "gid://shopify/ProductVariant/62532493476189",
-    "gid://shopify/ProductVariant/62532493508957",
-    "gid://shopify/ProductVariant/62532493541725",
-  ],
-  shorts: [
-    "gid://shopify/ProductVariant/64817081418077",
-    "gid://shopify/ProductVariant/64659950371165",
-    "gid://shopify/ProductVariant/64659950403933",
-    "gid://shopify/ProductVariant/64659950436701",
-  ],
-};
-
-const TIERS = {
-  socks: 60,
-  thong: 80,
-  shorts: 110,
-};
 
 /**
  * @param {RunInput} input
@@ -50,11 +26,12 @@ export function cartLinesDiscountsGenerateRun(input) {
     return { operations: [] };
   }
 
-  const allGiftIds = [
-    ...FREE_GIFT_IDS.socks,
-    ...FREE_GIFT_IDS.thong,
-    ...FREE_GIFT_IDS.shorts,
-  ];
+  const tiers = resolveConfig({
+    metafieldJsonValue: input.discount.metafield?.jsonValue ?? null,
+    countryIsoCode: input.localization?.country?.isoCode,
+  });
+
+  const allGiftIds = tiers.flatMap((tier) => tier.variantIds);
 
   let nonGiftSubtotal = 0;
 
@@ -70,28 +47,13 @@ export function cartLinesDiscountsGenerateRun(input) {
 
   const candidates = [];
 
-  const giftGroups = [
-    {
-      ids: FREE_GIFT_IDS.socks,
-      tier: TIERS.socks,
-    },
-    {
-      ids: FREE_GIFT_IDS.thong,
-      tier: TIERS.thong,
-    },
-    {
-      ids: FREE_GIFT_IDS.shorts,
-      tier: TIERS.shorts,
-    },
-  ];
-
-  for (const group of giftGroups) {
-    if (nonGiftSubtotal < group.tier) continue;
+  for (const tier of tiers) {
+    if (nonGiftSubtotal < tier.threshold) continue;
 
     const matchingGiftLines = input.cart.lines.filter((line) => {
       if (line.merchandise.__typename !== "ProductVariant") return false;
 
-      return group.ids.includes(line.merchandise.id);
+      return tier.variantIds.includes(line.merchandise.id);
     });
 
     // If there is more than one gift from the same group,

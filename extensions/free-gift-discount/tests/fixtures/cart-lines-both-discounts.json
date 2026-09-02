@@ -7,66 +7,31 @@
         "lines": [
           {
             "id": "gid://shopify/CartLine/0",
+            "quantity": 1,
             "cost": {
               "subtotalAmount": {
                 "amount": "6.0"
               }
+            },
+            "merchandise": {
+              "__typename": "ProductVariant",
+              "id": "gid://shopify/ProductVariant/1"
             }
           }
         ]
       },
       "discount": {
-        "discountClasses": ["PRODUCT", "ORDER", "SHIPPING"]
+        "discountClasses": ["PRODUCT", "ORDER", "SHIPPING"],
+        "metafield": null
+      },
+      "localization": {
+        "country": {
+          "isoCode": "NL"
+        }
       }
     },
-    "inputBytes": 126,
     "output": {
-      "operations": [
-        {
-          "orderDiscountsAdd": {
-            "candidates": [
-              {
-                "message": "10% OFF ORDER",
-                "targets": [
-                  {
-                    "orderSubtotal": {
-                      "excludedCartLineIds": []
-                    }
-                  }
-                ],
-                "value": {
-                  "percentage": {
-                    "value": 10.0
-                  }
-                }
-              }
-            ],
-            "selectionStrategy": "FIRST"
-          }
-        },
-        {
-          "productDiscountsAdd": {
-            "candidates": [
-              {
-                "message": "20% OFF PRODUCT",
-                "targets": [
-                  {
-                    "cartLine": {
-                      "id": "gid://shopify/CartLine/0"
-                    }
-                  }
-                ],
-                "value": {
-                  "percentage": {
-                    "value": 20.0
-                  }
-                }
-              }
-            ],
-            "selectionStrategy": "FIRST"
-          }
-        }
-      ]
+      "operations": []
     }
   }
 }

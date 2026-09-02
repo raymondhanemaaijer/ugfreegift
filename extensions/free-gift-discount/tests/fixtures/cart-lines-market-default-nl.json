@@ -10,7 +10,7 @@
             "quantity": 1,
             "cost": {
               "subtotalAmount": {
-                "amount": "200.0"
+                "amount": "70.0"
               }
             },
             "merchandise": {
@@ -35,7 +35,38 @@
       },
       "discount": {
         "discountClasses": ["PRODUCT"],
-        "metafield": null
+        "metafield": {
+          "jsonValue": {
+            "version": 1,
+            "default": {
+              "tiers": [
+                {
+                  "id": "socks",
+                  "label": "Socks",
+                  "threshold": 60,
+                  "variantIds": ["gid://shopify/ProductVariant/64124155494749"]
+                }
+              ]
+            },
+            "markets": [
+              {
+                "handle": "italy",
+                "name": "italy",
+                "currency": "EUR",
+                "countryCodes": ["IT"],
+                "enabled": true,
+                "tiers": [
+                  {
+                    "id": "socks",
+                    "label": "Socks IT",
+                    "threshold": 40,
+                    "variantIds": ["gid://shopify/ProductVariant/52540821242205"]
+                  }
+                ]
+              }
+            ]
+          }
+        }
       },
       "localization": {
         "country": {

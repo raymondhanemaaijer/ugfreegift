@@ -216,6 +216,56 @@ PRISMA_CLIENT_ENGINE_TYPE=binary
 
 This forces Prisma to use the binary engine mode, which runs the query engine as a separate process and can work via emulation on Windows ARM64.
 
+## Configuring free gifts per market
+
+The free gift thresholds and gift product variants are no longer hardcoded in the Shopify Function. They live in a single JSON metafield on the automatic discount node:
+
+- **Namespace/key**: `$app:free-gift` / `config`, type `json`.
+- **Written by**: the embedded admin app's Markets page (`/app/markets`), via the `metafieldsSet` mutation.
+- **Read by**: the Shopify Function (`extensions/free-gift-discount/src/cart_lines_discounts_generate_run.js`), via the input query field `discount.metafield(namespace: "$app:free-gift", key: "config") { jsonValue }`.
+
+### Config shape
+
+```json
+{
+  "version": 1,
+  "default": {
+    "tiers": [
+      { "id": "socks", "label": "Socks", "threshold": 60, "variantIds": ["gid://shopify/ProductVariant/..."] }
+    ]
+  },
+  "markets": [
+    {
+      "handle": "italy",
+      "name": "italy",
+      "currency": "EUR",
+      "countryCodes": ["IT"],
+      "enabled": true,
+      "tiers": [
+        { "id": "socks", "label": "Socks IT", "threshold": 40, "variantIds": ["gid://shopify/ProductVariant/..."] }
+      ]
+    }
+  ]
+}
+```
+
+### Resolution / fallback rule
+
+For each cart, the function resolves which tier list to use, in this order:
+
+1. A `markets[]` entry whose `countryCodes` includes the buyer's `localization.country.isoCode`, has `enabled: true`, and has a valid `tiers` array — its tiers are used.
+2. Otherwise, `default.tiers`, if present and valid.
+3. Otherwise (metafield missing, malformed, or step 1/2 both fail), the function falls back to `BUILTIN_DEFAULT_TIERS` hardcoded in `extensions/free-gift-discount/src/resolve-config.js` — the same socks/thong/shorts thresholds the store already runs today. This means the metafield can be rolled out gradually without ever breaking checkout.
+
+`localization.market` is deprecated by Shopify and is never used for this resolution — only `localization.country.isoCode`.
+
+### Deploying the scope change
+
+This feature adds the `read_markets` scope (needed for the Markets page's `markets` query) to both `shopify.app.toml` and `shopify.app.free-gift-discount.toml`. To roll it out:
+
+1. From the repo root, run `shopify app deploy` against the linked app config (dev or `shopify.app.free-gift-discount.toml` for production).
+2. In the Shopify admin, reinstall the app (or accept the new scope prompt) so `read_markets` is granted — until that happens, the Markets page's market list will fail to load, though gift discounting itself keeps working off the builtin fallback.
+
 ## Resources
 
 React Router:
