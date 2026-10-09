@@ -216,23 +216,24 @@ PRISMA_CLIENT_ENGINE_TYPE=binary
 
 This forces Prisma to use the binary engine mode, which runs the query engine as a separate process and can work via emulation on Windows ARM64.
 
-## Configuring free gifts per market
+## Configuring free gifts and free shipping per market
 
-The free gift thresholds and gift product variants are no longer hardcoded in the Shopify Function. They live in a single JSON metafield on the automatic discount node:
+The free gift thresholds, gift product variants, and (as of version 2) the free shipping threshold are no longer hardcoded in the Shopify Functions. They live in a single JSON metafield on the automatic discount node:
 
 - **Namespace/key**: `$app:free-gift` / `config`, type `json`.
 - **Written by**: the embedded admin app's Markets page (`/app/markets`), via the `metafieldsSet` mutation.
-- **Read by**: the Shopify Function (`extensions/free-gift-discount/src/cart_lines_discounts_generate_run.js`), via the input query field `discount.metafield(namespace: "$app:free-gift", key: "config") { jsonValue }`.
+- **Read by**: both Shopify Functions (`cart_lines_discounts_generate_run.js` for gifts, `cart_delivery_options_discounts_generate_run.js` for shipping), via the input query field `discount.metafield(namespace: "$app:free-gift", key: "config") { jsonValue }`.
 
-### Config shape
+### Config shape (version 2)
 
 ```json
 {
-  "version": 1,
+  "version": 2,
   "default": {
     "tiers": [
       { "id": "socks", "label": "Socks", "threshold": 60, "variantIds": ["gid://shopify/ProductVariant/..."] }
-    ]
+    ],
+    "freeShipping": { "enabled": true, "threshold": 60 }
   },
   "markets": [
     {
@@ -243,21 +244,52 @@ The free gift thresholds and gift product variants are no longer hardcoded in th
       "enabled": true,
       "tiers": [
         { "id": "socks", "label": "Socks IT", "threshold": 40, "variantIds": ["gid://shopify/ProductVariant/..."] }
-      ]
+      ],
+      "freeShipping": { "enabled": true, "threshold": 30 }
     }
   ]
 }
 ```
 
+Version 1 configs (no `freeShipping` anywhere) are still read correctly: both functions fall back to the builtin 60 EUR free-shipping default for any config that doesn't carry its own `freeShipping` block, so nothing already saved needs to change.
+
 ### Resolution / fallback rule
 
-For each cart, the function resolves which tier list to use, in this order:
+For each cart, each function resolves `tiers` and `freeShipping` independently, in this order:
 
-1. A `markets[]` entry whose `countryCodes` includes the buyer's `localization.country.isoCode`, has `enabled: true`, and has a valid `tiers` array — its tiers are used.
-2. Otherwise, `default.tiers`, if present and valid.
-3. Otherwise (metafield missing, malformed, or step 1/2 both fail), the function falls back to `BUILTIN_DEFAULT_TIERS` hardcoded in `extensions/free-gift-discount/src/resolve-config.js` — the same socks/thong/shorts thresholds the store already runs today. This means the metafield can be rolled out gradually without ever breaking checkout.
+1. A `markets[]` entry whose `countryCodes` includes the buyer's `localization.country.isoCode`, has `enabled: true`, and has a valid value for that field — its value is used.
+2. Otherwise, the `default` entry's value, if present and valid.
+3. Otherwise (metafield missing, malformed, or steps 1 and 2 both fail), the function falls back to a hardcoded builtin: `BUILTIN_DEFAULT_TIERS` (the socks/thong/shorts thresholds the store already runs today) and `BUILTIN_DEFAULT_FREE_SHIPPING` (`{ enabled: true, threshold: 60 }`, matching the live shipping-rate condition's 60 EUR today). Both live in `extensions/free-gift-discount/src/resolve-config.js`. This means the metafield can be rolled out gradually without ever breaking checkout.
 
 `localization.market` is deprecated by Shopify and is never used for this resolution — only `localization.country.isoCode`.
+
+### Free shipping via the delivery-options function
+
+`cart_delivery_options_discounts_generate_run.js` applies a 100% off shipping discount to the cart's first delivery group once the resolved `freeShipping.enabled` is true and the cart's non-gift subtotal (gift variants excluded, same rule the gift function uses) is at or above the resolved `freeShipping.threshold`. It is a no-op otherwise.
+
+This only ever runs once `SHIPPING` is included in the live discount's `discountClasses` (it is not today; the discount was created with `discountClasses: [PRODUCT]` only). **Turning `SHIPPING` on is a manual step, not something this build performs**, and it must happen together with removing the old theme shipping-rate condition that currently gives free shipping at 60 EUR: until that old condition is removed, turning `SHIPPING` on here risks giving a customer free shipping twice over (once from the old condition, once from this function), not literally double-charging them, but it means the two mechanisms are no longer a single source of truth. The 4-step switchover checklist on the Home page tracks this.
+
+### Non-EUR markets always keep their own amounts
+
+A market priced in a currency other than EUR (Poland/PLN, UK/GBP, Switzerland/CHF, Australia/AUD, Canada/CAD, New Zealand/NZD, Singapore/SGD, Romania/RON, World/USD, ...) can never meaningfully "use the Default", because the Default's tiers and threshold are entered in EUR. The Markets page and its save action both enforce this:
+
+- On load, and again right before a save, every non-EUR market the live `markets` query returns that has no saved entry yet is seeded with a placeholder entry: `enabled: true`, with the Default's tiers/threshold copied in as **numbers**, under that market's own currency (e.g. a 60 EUR Default becomes a placeholder "60" entry for a 60 GBP market, not a currency-converted amount). These are editable placeholders Raymond adjusts himself; they are never computed from a real FX rate, and Italy's real 30 EUR threshold (or any other EUR market's custom amount) is never used to seed a non-EUR market.
+- The save action rejects a submitted config that is missing an enabled entry for a non-EUR market, or that explicitly disables one.
+- This guarantee only holds once the merchant has saved through this page at least once. Before the first save (no metafield yet), the builtin fallback applies uniformly to every market including non-EUR ones — that's pre-existing behaviour from before this change, not something this change silently fixes.
+
+### Shop metafield mirror for the theme
+
+A copy of the same config JSON just written to the discount node is also mirrored onto a Shop-level metafield, `free_gift.config` (type `json`), by `app/lib/shop-metafield.server.js`, right after the discount-node write succeeds. Its purpose is solely so a later task can read the same thresholds from theme Liquid (e.g. a cart-drawer "free shipping from X" progress bar) without duplicating the per-market logic.
+
+**Namespace choice**: this deliberately uses a plain, non-reserved namespace (`free_gift`), not the reserved `$app:free-gift` namespace the discount-node metafield uses. Reserved `$app:` namespaces resolve in the Admin API to `app--<numeric-app-id>--<namespace>`, and whether that resolved field is actually readable from `shop.metafields` in a theme depends on the metafield definition's storefront access — this was **not verified against the live store** as part of this build, since doing so would mean writing to the live store's Shop resource, which is out of scope here (build and verify only, no live-store mutation). Documenting the reserved-namespace string without that verification risked blocking the later theme task entirely, so the safer, always-decoupled plain namespace was used instead. The discount-node metafield is unaffected (it only needs to be readable by this app's own Function, which has no storefront-readability requirement) and keeps `$app:free-gift`.
+
+**No theme file is touched by this change.** Whoever wires up the theme read should first confirm, in Settings > Custom data > Shop (or via `metafieldDefinitionCreate` with `access: { storefront: "PUBLIC_READ" }`), that `free_gift.config` is storefront-readable — a plain namespace is still private by default until a definition grants storefront access.
+
+If the discount-node metafieldsSet succeeds but this mirror write fails, the Markets page's save action still reports success (the discount itself saved correctly) but surfaces the mirror failure as a distinct toast, instead of silently swallowing it.
+
+### Home page switchover checklist
+
+The Home page's 4-step "Switch over from the old app" checklist is driven by real signals wherever this app can see them: step 1 (install) is always true once the embedded page loads, step 2 reflects whether the automatic discount exists and is active, and step 3 reflects whether any market has a custom (`enabled: true`) entry saved. Step 4 ("Turn off the old discount") cannot be read from the API, since that discount belongs to a different, old developer app this app has no visibility into — it is a manual confirmation Raymond flips himself, stored as a boolean Shop metafield `free_gift.old_discount_off`. Flipping it does not touch the old discount in any way; it only changes what the checklist and status badge show.
 
 ### Deploying the scope change
 

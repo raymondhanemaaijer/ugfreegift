@@ -11,6 +11,14 @@
  * dev`. Keep this in sync by hand with resolve-config.js's
  * BUILTIN_DEFAULT_TIERS if the live product/variant IDs ever change.
  */
+/**
+ * Mirrors extensions/free-gift-discount/src/resolve-config.js's
+ * BUILTIN_DEFAULT_FREE_SHIPPING: the safety net the function falls back to
+ * for a version 1 config or malformed/missing version 2 free-shipping data,
+ * matching today's live 60 EUR shipping-rate-condition behaviour.
+ */
+export const BUILTIN_DEFAULT_FREE_SHIPPING = { enabled: true, threshold: 60 };
+
 export const BUILTIN_DEFAULT_TIERS = [
   {
     id: "socks",

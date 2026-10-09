@@ -4,14 +4,35 @@
     "target": "cart.delivery-options.discounts.generate.run",
     "input": {
       "discount": {
-        "discountClasses": ["SHIPPING"]
+        "discountClasses": ["SHIPPING"],
+        "metafield": null
       },
       "cart": {
+        "lines": [
+          {
+            "id": "gid://shopify/CartLine/0",
+            "quantity": 1,
+            "cost": {
+              "subtotalAmount": {
+                "amount": "70.0"
+              }
+            },
+            "merchandise": {
+              "__typename": "ProductVariant",
+              "id": "gid://shopify/ProductVariant/1"
+            }
+          }
+        ],
         "deliveryGroups": [
           {
             "id": "gid://shopify/CartDeliveryGroup/1"
           }
         ]
+      },
+      "localization": {
+        "country": {
+          "isoCode": "NL"
+        }
       }
     },
     "output": {

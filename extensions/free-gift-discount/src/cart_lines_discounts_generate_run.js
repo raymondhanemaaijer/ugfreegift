@@ -26,7 +26,7 @@ export function cartLinesDiscountsGenerateRun(input) {
     return { operations: [] };
   }
 
-  const tiers = resolveConfig({
+  const { tiers } = resolveConfig({
     metafieldJsonValue: input.discount.metafield?.jsonValue ?? null,
     countryIsoCode: input.localization?.country?.isoCode,
   });

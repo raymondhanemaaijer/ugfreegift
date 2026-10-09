@@ -4,10 +4,17 @@
     "target": "cart.delivery-options.discounts.generate.run",
     "input": {
       "cart": {
+        "lines": [],
         "deliveryGroups": []
       },
       "discount": {
-        "discountClasses": ["SHIPPING"]
+        "discountClasses": ["SHIPPING"],
+        "metafield": null
+      },
+      "localization": {
+        "country": {
+          "isoCode": "NL"
+        }
       }
     },
     "output": {

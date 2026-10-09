@@ -1,10 +1,33 @@
 query DeliveryInput {
   cart {
+    lines {
+      id
+      quantity
+      cost {
+        subtotalAmount {
+          amount
+        }
+      }
+      merchandise {
+        __typename
+        ... on ProductVariant {
+          id
+        }
+      }
+    }
     deliveryGroups {
       id
     }
   }
   discount {
     discountClasses
+    metafield(namespace: "$app:free-gift", key: "config") {
+      jsonValue
+    }
+  }
+  localization {
+    country {
+      isoCode
+    }
   }
 }
