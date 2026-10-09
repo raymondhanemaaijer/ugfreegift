@@ -1,0 +1,22 @@
+query CartValidationsGenerateRunInput {
+  cart {
+    buyerIdentity {
+      phone
+      customer {
+        id
+        hasAnyTag(tags: ["blocked"])
+      }
+    }
+    deliveryGroups {
+      deliveryAddress {
+        zip
+        phone
+      }
+    }
+  }
+  validation {
+    metafield(namespace: "$app:checkout-block", key: "config") {
+      jsonValue
+    }
+  }
+}

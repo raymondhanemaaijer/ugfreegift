@@ -1,0 +1,29 @@
+{
+  "payload": {
+    "export": "cart-validations-generate-run",
+    "target": "cart.validations.generate.run",
+    "input": {
+      "cart": {
+        "buyerIdentity": null,
+        "deliveryGroups": [
+          {
+            "deliveryAddress": {
+              "zip": "1012AB",
+              "phone": "600000000"
+            }
+          }
+        ]
+      },
+      "validation": {
+        "metafield": {
+          "jsonValue": [
+            { "zip": "28922", "phoneSuffix": "652129240" }
+          ]
+        }
+      }
+    },
+    "output": {
+      "operations": []
+    }
+  }
+}

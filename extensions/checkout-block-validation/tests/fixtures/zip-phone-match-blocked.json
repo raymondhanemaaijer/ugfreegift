@@ -1,0 +1,46 @@
+{
+  "payload": {
+    "export": "cart-validations-generate-run",
+    "target": "cart.validations.generate.run",
+    "input": {
+      "cart": {
+        "buyerIdentity": {
+          "phone": "+34652129240",
+          "customer": {
+            "id": "gid://shopify/Customer/2",
+            "hasAnyTag": false
+          }
+        },
+        "deliveryGroups": [
+          {
+            "deliveryAddress": {
+              "zip": "28922",
+              "phone": null
+            }
+          }
+        ]
+      },
+      "validation": {
+        "metafield": {
+          "jsonValue": [
+            { "zip": "28922", "phoneSuffix": "652129240" }
+          ]
+        }
+      }
+    },
+    "output": {
+      "operations": [
+        {
+          "validationAdd": {
+            "errors": [
+              {
+                "message": "This order cannot be completed. Please contact help@ultimate-gainz.com.",
+                "target": "$.cart"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "payload": {
+    "export": "cart-validations-generate-run",
+    "target": "cart.validations.generate.run",
+    "input": {
+      "cart": {
+        "buyerIdentity": {
+          "phone": "+34600000000",
+          "customer": {
+            "id": "gid://shopify/Customer/3",
+            "hasAnyTag": false
+          }
+        },
+        "deliveryGroups": [
+          {
+            "deliveryAddress": {
+              "zip": "28922",
+              "phone": null
+            }
+          }
+        ]
+      },
+      "validation": {
+        "metafield": {
+          "jsonValue": [
+            { "zip": "28922", "phoneSuffix": "652129240" }
+          ]
+        }
+      }
+    },
+    "output": {
+      "operations": []
+    }
+  }
+}
